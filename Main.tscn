@@ -1,0 +1,155 @@
+[gd_scene load_steps=7 format=2]
+
+[ext_resource path="res://Camera2D.gd" type="Script" id=1]
+[ext_resource path="res://Theme/DefaultTheme.tres" type="Theme" id=2]
+[ext_resource path="res://FolderPath.gd" type="Script" id=3]
+[ext_resource path="res://Main.gd" type="Script" id=4]
+[ext_resource path="res://DialogBoxes/NPCBox.tscn" type="PackedScene" id=5]
+[ext_resource path="res://Font/DefaultFont_32.tres" type="DynamicFont" id=6]
+
+[node name="Main" type="Node2D"]
+script = ExtResource( 4 )
+
+[node name="BackGround" type="Polygon2D" parent="."]
+position = Vector2( -6833, -5873 )
+scale = Vector2( 20000, 20000 )
+color = Color( 0.258824, 0.231373, 0.309804, 1 )
+polygon = PoolVector2Array( 0, 0, 1, 0, 1, 1, 0, 1 )
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2( 1110, 2790 )
+current = true
+zoom = Vector2( 0.8, 0.8 )
+script = ExtResource( 1 )
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="FolderPath" type="Control" parent="CanvasLayer"]
+margin_right = 40.0
+margin_bottom = 40.0
+script = ExtResource( 3 )
+
+[node name="FileFolderContainer" type="HBoxContainer" parent="CanvasLayer/FolderPath"]
+margin_right = 807.0
+margin_bottom = 47.0
+
+[node name="FileFolderLabel" type="RichTextLabel" parent="CanvasLayer/FolderPath/FileFolderContainer"]
+margin_right = 165.0
+margin_bottom = 47.0
+rect_min_size = Vector2( 165, 0 )
+rect_clip_content = false
+custom_fonts/normal_font = ExtResource( 6 )
+text = "File folder:"
+scroll_active = false
+
+[node name="FolderPathLabel" type="RichTextLabel" parent="CanvasLayer/FolderPath/FileFolderContainer"]
+margin_left = 169.0
+margin_right = 769.0
+margin_bottom = 47.0
+rect_min_size = Vector2( 600, 0 )
+size_flags_vertical = 3
+custom_fonts/normal_font = ExtResource( 6 )
+scroll_active = false
+scroll_following = true
+
+[node name="ChooseFolderButton" type="Button" parent="CanvasLayer/FolderPath/FileFolderContainer"]
+margin_left = 773.0
+margin_right = 812.0
+margin_bottom = 47.0
+rect_min_size = Vector2( 33, 0 )
+custom_fonts/font = ExtResource( 6 )
+text = "..."
+
+[node name="FileNameContainer" type="HBoxContainer" parent="CanvasLayer/FolderPath"]
+margin_top = 53.0
+margin_right = 812.0
+margin_bottom = 100.0
+
+[node name="FileNameLabel" type="RichTextLabel" parent="CanvasLayer/FolderPath/FileNameContainer"]
+margin_right = 165.0
+margin_bottom = 47.0
+rect_min_size = Vector2( 165, 0 )
+rect_clip_content = false
+custom_fonts/normal_font = ExtResource( 6 )
+text = "File Name:"
+scroll_active = false
+
+[node name="FileNameTextEdit" type="TextEdit" parent="CanvasLayer/FolderPath/FileNameContainer"]
+margin_left = 169.0
+margin_right = 665.0
+margin_bottom = 47.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_fonts/font = ExtResource( 6 )
+wrap_enabled = true
+
+[node name="SaveFileButton" type="Button" parent="CanvasLayer/FolderPath/FileNameContainer"]
+margin_left = 669.0
+margin_right = 812.0
+margin_bottom = 47.0
+custom_fonts/font = ExtResource( 6 )
+text = "Save File"
+
+[node name="FileDialog" type="FileDialog" parent="CanvasLayer/FolderPath"]
+margin_left = 447.0
+margin_top = 409.0
+margin_right = 1858.0
+margin_bottom = 1209.0
+rect_scale = Vector2( 0.7, 0.7 )
+theme = ExtResource( 2 )
+window_title = "Открыть каталог"
+resizable = true
+mode = 2
+access = 2
+show_hidden_files = true
+current_dir = "/GODOT GDS games/DialogEditor"
+current_path = "/GODOT GDS games/DialogEditor/"
+
+[node name="ReadFileDialog" type="FileDialog" parent="CanvasLayer/FolderPath"]
+visible = true
+margin_left = 447.0
+margin_top = 409.0
+margin_right = 1858.0
+margin_bottom = 1209.0
+rect_scale = Vector2( 0.7, 0.7 )
+theme = ExtResource( 2 )
+window_title = "Открыть файл"
+resizable = true
+mode = 0
+access = 2
+show_hidden_files = true
+current_dir = "/GODOT GDS games/DialogEditor"
+current_path = "/GODOT GDS games/DialogEditor/"
+
+[node name="ReadFileButton" type="Button" parent="CanvasLayer/FolderPath"]
+margin_top = 105.0
+margin_right = 165.0
+margin_bottom = 148.0
+custom_fonts/font = ExtResource( 6 )
+text = "Read File"
+
+[node name="ResetButton" type="Button" parent="CanvasLayer/FolderPath"]
+margin_left = 1753.0
+margin_right = 1918.0
+margin_bottom = 43.0
+custom_fonts/font = ExtResource( 6 )
+text = "Reset"
+
+[node name="NPCBox1" parent="." instance=ExtResource( 5 )]
+margin_left = 678.0
+margin_top = 2610.0
+margin_right = 947.0
+margin_bottom = 2792.0
+
+[node name="NPCBox" type="Node" parent="."]
+
+[connection signal="tree_exited" from="." to="." method="_on_Main_tree_exited"]
+[connection signal="folder_choosed" from="CanvasLayer/FolderPath" to="." method="_on_FolderPath_folder_choosed"]
+[connection signal="save_game" from="CanvasLayer/FolderPath" to="." method="_on_FolderPath_save_game"]
+[connection signal="pressed" from="CanvasLayer/FolderPath/FileFolderContainer/ChooseFolderButton" to="CanvasLayer/FolderPath" method="_on_ChooseFolderButton_pressed"]
+[connection signal="pressed" from="CanvasLayer/FolderPath/FileNameContainer/SaveFileButton" to="CanvasLayer/FolderPath" method="_on_SaveFileButton_pressed"]
+[connection signal="dir_selected" from="CanvasLayer/FolderPath/FileDialog" to="CanvasLayer/FolderPath" method="_on_FileDialog_dir_selected"]
+[connection signal="dir_selected" from="CanvasLayer/FolderPath/ReadFileDialog" to="CanvasLayer/FolderPath" method="_on_FileDialog_dir_selected"]
+[connection signal="file_selected" from="CanvasLayer/FolderPath/ReadFileDialog" to="." method="_on_ReadFileDialog_file_selected"]
+[connection signal="pressed" from="CanvasLayer/FolderPath/ReadFileButton" to="CanvasLayer/FolderPath" method="_on_ReadFileButton_pressed"]
+[connection signal="pressed" from="CanvasLayer/FolderPath/ResetButton" to="CanvasLayer/FolderPath" method="_on_ResetButton_pressed"]

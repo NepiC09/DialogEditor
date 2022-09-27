@@ -1,0 +1,376 @@
+[gd_scene load_steps=5 format=2]
+
+[ext_resource path="res://Theme/DefaultTheme.tres" type="Theme" id=1]
+[ext_resource path="res://DialogBoxes/Line2D.gd" type="Script" id=3]
+
+[sub_resource type="GDScript" id=2]
+script/source = "extends ColorRect
+
+onready var textEdit = $VBoxContainer/TextEdit
+onready var optionButton = $VBoxContainer/OptionButton
+onready var indexLabel = $IndexLabel
+onready var closeButton = $CloseButton
+onready var textSpeed = $VBoxContainer/TextSpeedContainer/TextEdit
+onready var rightLine1 = $RightLine1
+onready var rightLine2 = $RightLine2
+onready var rightLine3 = $RightLine3
+onready var leftPoint = $LeftPoint
+onready var rightPoint = $RightPoint
+onready var PlayerBox = preload(\"res://DialogBoxes/PlayerBox.tscn\")
+
+onready var global = Global
+
+var choosedAction: int setget set_choosedAction
+var index: int
+var nextNPCBox :ColorRect = null
+var prevNPCBox :ColorRect = null
+
+var numOfAnswers = 0 setget set_numOfAnswers
+var nextPlayerBox1 :ColorRect = null
+var nextPlayerBox2 :ColorRect = null
+var nextPlayerBox3 :ColorRect = null
+var prevPlayerBox :ColorRect = null
+
+var action = \"\"
+var dragging = false setget set_dragging
+var childeDragging = false
+var parentDragging :ColorRect = null
+var changing_position = 0
+var x = rect_size.x/2
+var y = 10
+var leftLine: Line2D = null
+var InLine = 0
+
+func _ready():
+	index = global.NPC_index
+	indexLabel.text = index as String
+	if index == 1:
+		closeButton.visible = false
+	else:
+		closeButton.visible = true
+
+func _physics_process(_delta):
+	if dragging:
+		if !childeDragging:
+			var old_position = self.rect_global_position.y
+			self.rect_global_position.y = lerp(self.rect_global_position.y, get_global_mouse_position().y - y, 25*_delta)
+			changing_position = self.rect_global_position.y - old_position
+		else:
+			self.rect_global_position.y += parentDragging.changing_position
+		if leftLine != null:
+			leftLine.rightPoint = self.leftPoint.rect_global_position + self.leftPoint.rect_size/2
+		if rightLine1.get_point_count() == 2:
+			rightLine1.rightPoint = rightLine1.rightGlobalPoint
+
+func set_choosedAction(value):
+	choosedAction = value
+	if(choosedAction == 1):
+		action = \"Continue\"
+		create_NPCBox()
+	
+	if(choosedAction == 2):
+		action = \"Player Turn\"
+		create_PlayerBox(0)
+	
+	if(choosedAction == 3):
+		action = \"Open Name\"
+		create_NPCBox()
+	
+	optionButton.disabled = min(value, 1)
+	closeButton.disabled = true
+
+func _on_OptionButton_item_selected(index):
+	set_choosedAction(index)
+
+
+func create_NPCBox():
+#	nextNPCBox = self.duplicate()
+	nextNPCBox = load(\"res://DialogBoxes/NPCBox.tscn\").instance()
+	global.NPC_index += 1
+	InLine = global.NPC_index
+	get_tree().current_scene.add_child(nextNPCBox, true)
+	
+	nextNPCBox.rect_position.x += rect_size.x + 80 + rect_position.x
+	nextNPCBox.rect_position.y = rect_position.y
+	nextNPCBox.prevNPCBox = self
+	
+	var from = self.rightPoint.rect_global_position + rightPoint.rect_size/2
+	var to = nextNPCBox.leftPoint.rect_global_position + nextNPCBox.leftPoint.rect_size/2
+	rightLine1.leftPoint = from
+	rightLine1.rightPoint = to
+	nextNPCBox.leftLine = rightLine1
+	
+	return 1
+
+func create_PlayerBox(start_position):
+	numOfAnswers = 3
+	nextPlayerBox1 = PlayerBox.instance()
+	nextPlayerBox2 = PlayerBox.instance()
+	nextPlayerBox3 = PlayerBox.instance()
+	
+	InLine = -1
+	
+	get_tree().current_scene.add_child(nextPlayerBox1, true)
+	get_tree().current_scene.add_child(nextPlayerBox2, true)
+	get_tree().current_scene.add_child(nextPlayerBox3, true)
+	
+	nextPlayerBox1.index = 1
+	nextPlayerBox1.start_index = 1
+	nextPlayerBox2.index = 2
+	nextPlayerBox2.start_index = 2
+	nextPlayerBox3.index = 3
+	nextPlayerBox3.start_index = 3
+	
+	nextPlayerBox1.rect_position.x += rect_size.x + 80 + rect_position.x
+	nextPlayerBox1.rect_position.y = rect_position.y - nextPlayerBox1.rect_size.y - 10 - start_position
+	nextPlayerBox1.prevNPCBox = self
+	nextPlayerBox2.rect_position.x += rect_size.x + 80 + rect_position.x
+	nextPlayerBox2.rect_position.y = rect_position.y - start_position
+	nextPlayerBox2.prevNPCBox = self
+	nextPlayerBox3.rect_position.x += rect_size.x + 80 + rect_position.x
+	nextPlayerBox3.rect_position.y = rect_position.y + nextPlayerBox1.rect_size.y + 10 - start_position
+	nextPlayerBox3.prevNPCBox = self
+	
+	var from = self.rightPoint.rect_global_position + rightPoint.rect_size/2
+	var to = nextPlayerBox1.leftPoint.rect_global_position + nextPlayerBox1.leftPoint.rect_size/2
+	rightLine1.leftPoint = from
+	rightLine1.rightPoint = to
+	nextPlayerBox1.leftLine = rightLine1
+	
+	to = nextPlayerBox2.leftPoint.rect_global_position + nextPlayerBox2.leftPoint.rect_size/2
+	rightLine2.leftPoint = from
+	rightLine2.rightPoint = to
+	nextPlayerBox2.leftLine = rightLine2
+	
+	to = nextPlayerBox3.leftPoint.rect_global_position + nextPlayerBox3.leftPoint.rect_size/2
+	rightLine3.leftPoint = from
+	rightLine3.rightPoint = to
+	nextPlayerBox3.leftLine = rightLine3
+	
+	return 1
+
+func set_numOfAnswers(value):
+	numOfAnswers = value
+	if numOfAnswers == 0:
+		optionButton.selected = 0
+		optionButton.disabled = false
+		closeButton.disabled = false
+		nextPlayerBox1 = null
+		return
+	var _index = 1
+	
+	if nextPlayerBox1 != null:
+		nextPlayerBox1.index = _index
+		_index += 1
+	if nextPlayerBox2 != null:
+		nextPlayerBox2.index = _index
+		_index += 1
+	if nextPlayerBox3 != null:
+		nextPlayerBox3.index = _index
+		_index += 1
+
+func set_index_of_answers():
+	if nextPlayerBox1 == null and nextPlayerBox2 != null:
+		nextPlayerBox1 = nextPlayerBox2
+		if nextPlayerBox3 != null:
+			nextPlayerBox2 = nextPlayerBox3
+			nextPlayerBox3 = null
+		else:
+			nextPlayerBox2 = null
+	elif nextPlayerBox2 == null and nextPlayerBox3 != null:
+		nextPlayerBox2 = nextPlayerBox3
+		nextPlayerBox3 = null
+
+
+func _exit_tree():
+	global.NPC_index -= 1
+	if prevNPCBox != null:
+		prevNPCBox.nextNPCBox = null
+		prevNPCBox.optionButton.selected = 0
+		prevNPCBox.optionButton.disabled = false
+		prevNPCBox.closeButton.disabled = false
+		leftLine.clear_points()
+	if prevPlayerBox != null:
+		prevPlayerBox.nextNPCBox = null
+		prevPlayerBox.optionButton.selected = 0
+		prevPlayerBox.optionButton.disabled = false
+		prevPlayerBox.closeButton.disabled = false
+		leftLine.clear_points()
+
+
+func _on_CloseButton_pressed():
+	queue_free()
+
+
+func _on_DragAndDropButton_button_down():
+	set_dragging(true)
+
+
+func _on_DragAndDropButton_button_up():
+	changing_position = 0
+	parentDragging = null
+	set_dragging(false)
+
+func set_dragging(value):
+	if nextNPCBox != null:
+		if parentDragging == null:
+			nextNPCBox.parentDragging = self
+		else:
+			nextNPCBox.parentDragging = self.parentDragging
+		nextNPCBox.childeDragging = value
+		nextNPCBox.set_dragging(value)
+	
+	
+	if nextPlayerBox1 != null:
+		if parentDragging == null:
+			nextPlayerBox1.parentDragging = self
+		else:
+			nextPlayerBox1.parentDragging = self.parentDragging
+		nextPlayerBox1.childeDragging = value
+		nextPlayerBox1.set_dragging(value)
+	if nextPlayerBox2 != null:
+		if parentDragging == null:
+			nextPlayerBox2.parentDragging = self
+		else:
+			nextPlayerBox2.parentDragging = self.parentDragging
+		nextPlayerBox2.childeDragging = value
+		nextPlayerBox2.set_dragging(value)
+	if nextPlayerBox3 != null:
+		if parentDragging == null:
+			nextPlayerBox3.parentDragging = self
+		else:
+			nextPlayerBox3.parentDragging = self.parentDragging
+		nextPlayerBox3.childeDragging = value
+		nextPlayerBox3.set_dragging(value)
+	
+	if value == false:
+		changing_position = 0
+		parentDragging = null
+	
+	dragging = value
+"
+
+[sub_resource type="ImageTexture" id=1]
+
+[node name="NPCBox" type="ColorRect"]
+margin_right = 269.0
+margin_bottom = 182.0
+color = Color( 0.419608, 0.372549, 0.458824, 1 )
+script = SubResource( 2 )
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_top = 21.0
+margin_right = 811.0
+margin_bottom = 483.0
+rect_scale = Vector2( 0.25, 0.25 )
+
+[node name="TextEdit" type="TextEdit" parent="VBoxContainer"]
+margin_right = 1095.0
+margin_bottom = 440.0
+rect_min_size = Vector2( 0, 440 )
+mouse_filter = 1
+theme = ExtResource( 1 )
+text = "Текст"
+context_menu_enabled = false
+wrap_enabled = true
+
+[node name="TextSpeedContainer" type="HBoxContainer" parent="VBoxContainer"]
+margin_top = 444.0
+margin_right = 1095.0
+margin_bottom = 534.0
+
+[node name="TextLabel" type="RichTextLabel" parent="VBoxContainer/TextSpeedContainer"]
+margin_right = 340.0
+margin_bottom = 90.0
+rect_min_size = Vector2( 340, 90 )
+text = "Text speed:"
+scroll_active = false
+
+[node name="TextEdit" type="SpinBox" parent="VBoxContainer/TextSpeedContainer"]
+margin_left = 344.0
+margin_right = 1095.0
+margin_bottom = 90.0
+rect_min_size = Vector2( 751, 90 )
+custom_icons/updown = SubResource( 1 )
+min_value = 1.0
+value = 20.0
+
+[node name="OptionButton" type="OptionButton" parent="VBoxContainer"]
+margin_top = 538.0
+margin_right = 1095.0
+margin_bottom = 648.0
+rect_min_size = Vector2( 0, 110 )
+theme = ExtResource( 1 )
+text = "Выберите действие"
+items = [ "Выберите действие", null, false, 0, null, "Продолжить", null, false, 1, null, "Очередь Игрока", null, false, 2, null, "Показать Имя", null, false, 3, null ]
+selected = 0
+
+[node name="CloseButton" type="Button" parent="."]
+margin_left = 274.0
+margin_top = 21.0
+margin_right = 362.0
+margin_bottom = 133.0
+rect_scale = Vector2( 0.25, 0.25 )
+custom_colors/font_color_disabled = Color( 0.941176, 0.478431, 0.478431, 1 )
+custom_colors/font_color_focus = Color( 0.941176, 0.478431, 0.478431, 1 )
+custom_colors/font_color = Color( 0.941176, 0.478431, 0.478431, 1 )
+custom_colors/font_color_hover = Color( 0.941176, 0.478431, 0.478431, 1 )
+custom_colors/font_color_pressed = Color( 0.941176, 0.478431, 0.478431, 1 )
+text = "X"
+
+[node name="DragAndDropButton" type="Button" parent="."]
+margin_right = 1096.0
+margin_bottom = 86.0
+rect_scale = Vector2( 0.25, 0.25 )
+mouse_default_cursor_shape = 13
+custom_colors/font_color_disabled = Color( 0.423529, 0.423529, 0.423529, 1 )
+custom_colors/font_color_focus = Color( 0.423529, 0.423529, 0.423529, 1 )
+custom_colors/font_color = Color( 0.423529, 0.423529, 0.423529, 1 )
+custom_colors/font_color_hover = Color( 0.423529, 0.423529, 0.423529, 1 )
+custom_colors/font_color_pressed = Color( 0.423529, 0.423529, 0.423529, 1 )
+text = "drag and drop"
+
+[node name="LeftPoint" type="ColorRect" parent="."]
+margin_left = -22.0
+margin_bottom = 21.0
+color = Color( 0.372549, 0.372549, 0.45098, 1 )
+
+[node name="RightPoint" type="ColorRect" parent="."]
+margin_left = 274.0
+margin_right = 296.0
+margin_bottom = 21.0
+color = Color( 0.454902, 0.454902, 0.552941, 1 )
+
+[node name="IndexLabel" type="Label" parent="."]
+margin_left = -40.0
+margin_top = 3.0
+margin_right = 116.0
+margin_bottom = 89.0
+rect_scale = Vector2( 0.25, 0.25 )
+text = "0"
+align = 2
+
+[node name="RightLine1" type="Line2D" parent="."]
+position = Vector2( 270, 0 )
+width = 5.0
+default_color = Color( 0.454902, 0.454902, 0.552941, 1 )
+script = ExtResource( 3 )
+
+[node name="RightLine2" type="Line2D" parent="."]
+position = Vector2( 270, 0 )
+width = 5.0
+default_color = Color( 0.454902, 0.454902, 0.552941, 1 )
+script = ExtResource( 3 )
+
+[node name="RightLine3" type="Line2D" parent="."]
+position = Vector2( 270, 0 )
+width = 5.0
+default_color = Color( 0.454902, 0.454902, 0.552941, 1 )
+script = ExtResource( 3 )
+
+[connection signal="item_selected" from="VBoxContainer/OptionButton" to="." method="_on_OptionButton_item_selected"]
+[connection signal="pressed" from="CloseButton" to="." method="_on_CloseButton_pressed"]
+[connection signal="button_down" from="DragAndDropButton" to="." method="_on_DragAndDropButton_button_down"]
+[connection signal="button_up" from="DragAndDropButton" to="." method="_on_DragAndDropButton_button_up"]
